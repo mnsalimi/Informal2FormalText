@@ -2,7 +2,7 @@ import argparse
 from load import load_data
 import torch
 from model import LangModelWithDense
-from tqdm import tqdm
+# from tqdm import tqdm
 from transformers import *
 from utils import Meter
 import os
@@ -25,14 +25,16 @@ def train_model(model,
     best_f1 = -1
 
     # epoch loop
+    best_macro_f1 = []
     for epoch in range(args.epochs):
-        train_tqdm = tqdm(train_loader)
-        dev_tqdm = tqdm(dev_loader)
+        # train_tqdm = tqdm(train_loader)
+        # dev_tqdm = tqdm(dev_loader)
 
         model.train()
 
         # train loop
-        for i, (train_x, train_y, mask, crf_mask) in enumerate(train_tqdm):
+        # for i, (train_x, train_y, mask, crf_mask) in enumerate(train_tqdm):
+        for i, (train_x, train_y, mask, crf_mask) in enumerate(train_loader):
             # get the logits and update the gradients
             optimizer.zero_grad()
 
@@ -50,9 +52,11 @@ def train_model(model,
             loss, _, _, micro_f1, _, _, macro_f1 = train_meter.update_params(loss.item(), logits, train_y)
 
             # print the metrics
-            train_tqdm.set_description("Epoch: {}/{}, Train Loss: {:.4f}, Train Micro F1: {:.4f}, Train Macro F1: {:.4f}".
-                                       format(epoch + 1, args.epochs, loss, micro_f1, macro_f1))
-            train_tqdm.refresh()
+            # train_tqdm.set_description("Epoch: {}/{}, Train Loss: {:.4f}, Train Micro F1: {:.4f}, Train Macro F1: {:.4f}".
+            #                            format(epoch + 1, args.epochs, loss, micro_f1, macro_f1))
+        print("Epoch: {}/{}, Train Loss: {:.4f}, Train Macro F1: {:.4f}".
+                                    format(epoch + 1, args.epochs, loss, macro_f1))
+            # train_tqdm.refresh()
 
         # reset the metrics to 0
         train_meter.reset()
@@ -60,7 +64,8 @@ def train_model(model,
         model.eval()
 
         # evaluation loop -> mostly same as the training loop, but without updating the parameters
-        for i, (dev_x, dev_y, mask, crf_mask) in enumerate(dev_tqdm):
+        # for i, (dev_x, dev_y, mask, crf_mask) in enumerate(dev_tqdm):
+        for i, (dev_x, dev_y, mask, crf_mask) in enumerate(dev_loader):
             logits = model.forward(dev_x, mask)
 
             if args.no_crf:
@@ -70,9 +75,11 @@ def train_model(model,
 
             loss, _, _, micro_f1, _, _, macro_f1 = dev_meter.update_params(loss.item(), logits, dev_y)
 
-            dev_tqdm.set_description("Dev Loss: {:.4f}, Dev Micro F1: {:.4f}, Dev Macro F1: {:.4f}".
-                                     format(loss, micro_f1, macro_f1))
-            dev_tqdm.refresh()
+            # dev_tqdm.set_description("Dev Loss: {:.4f}, Dev Micro F1: {:.4f}, Dev Macro F1: {:.4f}\n".
+            #                          format(loss, micro_f1, macro_f1))
+        print("Dev Loss: {:.4f}, Dev Macro F1: {:.4f}\n".
+                                    format(loss, macro_f1))
+            # dev_tqdm.refresh()
 
         dev_meter.reset()
 
@@ -81,13 +88,14 @@ def train_model(model,
             if not os.path.exists(args.save_path):
                 os.makedirs(args.save_path)
 
-            print("Macro F1 score improved from {:.4f} -> {:.4f}. Saving model...".format(best_f1, macro_f1))
+            # print("Macro F1 score improved from {:.4f} -> {:.4f}. Saving model...".format(best_f1, macro_f1))
 
             best_f1 = macro_f1
             torch.save(model, os.path.join(args.save_path, "model.pt"))
             with open(os.path.join(args.save_path, "label_encoder.pk"), "wb") as file:
                 pickle.dump(label_encoder, file)
-
+        print("The BEST F1 on DEV: ", best_f1)
+        print()
 
 def main():
     device = torch.device(args.device)

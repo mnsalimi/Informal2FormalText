@@ -2,6 +2,9 @@ import pickle
 import random
 import numpy as np
 from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.metrics import f1_score
+
 
 def convert_all_csvs_to_conll():
     labels = []
@@ -56,7 +59,7 @@ def convert_all_csvs_to_conll():
                 f.write(x+"\t"+y+"\n")
             f.write("\n")
     
-    return data
+    return data, train, dev
 
 def assign_label_based_freq(data):
     freq = {}
@@ -88,7 +91,51 @@ def assign_label_based_freq(data):
                 # freq[data[i][j][0]][data[i][j][1]] += 1
     with open("freq.pickle", "wb") as f:
         pickle.dump(freq, f)
-    print(freq)
+    best_tag_for_tokens = {}
+    for token, info in freq.items():
+        max_freq = -1
+        max_tag = ""
+        for tag, tag_freq in info.items():
+            if tag_freq > max_freq:
+                max_freq = tag_freq
+                max_tag = tag
+        if token not in best_tag_for_tokens:
+            best_tag_for_tokens[token] = max_tag
+        else:
+            print("WRONG")
+    with open("best_tags.pickle", "wb") as f:
+        pickle.dump(best_tag_for_tokens, f)
+    # print(best_tag_for_tokens)
+    # print(freq)
+def get_f1_on_dev():
+    with open("dev.txt", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    dev = []
+    end = 0
+    for i in range(len(lines)):
+        if lines[i] == "\n":
+            dev.append(
+                [line.replace("\n", "").split("\t") for line in lines[end:i]]
+            )
+            end = i+1
+            
+    with open("best_tags.pickle", "rb") as f:
+        best_tags = pickle.load(f)
+    y_preds = []
+    y_reals = []
+    for i in range(len(dev)):
+        for j in range(len(dev[i])):
+            if dev[i][j][0] in best_tags:
+                y_preds.append(dev[i][j][1])
+            else:
+                y_preds.append("N")
+            y_reals.append(dev[i][j][1])
+    print(set(y_preds))
+    print(set(y_reals))
+    y_preds = [0 if y == "N" else 1 if y == "C" else 2 for y in y_preds]
+    y_reals = [0 if y == "N" else 1 if y == "C" else 2 for y in y_reals]
+    res = f1_score(y_reals, y_preds, average='macro')
+    print(res)
 
 def get_ambiguity(data):
     ambgs = {}
@@ -105,6 +152,7 @@ def get_ambiguity(data):
     # [print(ambg) for ambg in ambgs_list]
 
 if __name__ == "__main__":
-    data = convert_all_csvs_to_conll()
+    data, train, dev = convert_all_csvs_to_conll()
     ambgs = get_ambiguity(data)
-    assign_label_based_freq(data)
+    assign_label_based_freq(train)
+    get_f1_on_dev()
