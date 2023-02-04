@@ -1,3 +1,4 @@
+import pickle
 import random
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -57,6 +58,38 @@ def convert_all_csvs_to_conll():
     
     return data
 
+def assign_label_based_freq(data):
+    freq = {}
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            if data[i][j][0] not in freq:
+                freq[data[i][j][0]] = {}
+
+                # try:
+                if data[i][j][1] not in freq[data[i][j][0]]:
+                    freq[data[i][j][0]] = {data[i][j][1]: 1}
+                # except:
+                #     print(freq)
+                #     print(data[i][j][0])
+                #     print(data[i][j][1])
+                #     print()
+                else:
+                    freq[data[i][j][0]][data[i][j][1]] += 1
+
+            else:
+                if data[i][j][1] not in freq[data[i][j][0]]:
+                    freq[data[i][j][0]] = {data[i][j][1]: 1}
+                else:
+                    freq[data[i][j][0]][data[i][j][1]] += 1
+                # print("else")
+                # print(freq)
+                # print(data[i][j][0])
+                # print(data[i][j][1])
+                # freq[data[i][j][0]][data[i][j][1]] += 1
+    with open("freq.pickle", "wb") as f:
+        pickle.dump(freq, f)
+    print(freq)
+
 def get_ambiguity(data):
     ambgs = {}
     for row in data:
@@ -68,9 +101,10 @@ def get_ambiguity(data):
                 if y not in ambgs[x]:
                     ambgs[x].append(y)
     ambgs_list = [(x, y) for x, y in ambgs.items() if len(y) > 1]
-    print(len(ambgs_list))
-    [print(ambg) for ambg in ambgs_list]
+    # print(len(ambgs_list))
+    # [print(ambg) for ambg in ambgs_list]
 
 if __name__ == "__main__":
     data = convert_all_csvs_to_conll()
     ambgs = get_ambiguity(data)
+    assign_label_based_freq(data)

@@ -67,7 +67,7 @@ def load_data_from_file(path,
                         list_all_crf_masks.append(torch.tensor([1 if label != null_label else 0
                                                                 for label in list_all_labels[-1]], dtype=torch.uint8))
                     else:
-                        print(len(list_tokens))
+                        print("JIIIIM", len(list_tokens))
                     assert len(list_tokens) == len(list_labels)
 
                     list_tokens = []
