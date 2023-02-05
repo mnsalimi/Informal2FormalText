@@ -1,5 +1,0 @@
-init data: 82.70
-clean data: 85.11
-maxlen from 128 to 20: 86.74
-batch from 32 to 64: 87.56
-batch from 64 to 8: 88.18
