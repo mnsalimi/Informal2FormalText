@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pickle
+import gdown
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -36,6 +37,9 @@ class LogisticRegTokenClassification:
                 tagged_sentence.append((token[0], token[1]))
 
     def __load_model(self):
+        url = "https://drive.google.com/uc?id=1pf4BpJEPfOLcXyBTEeqLwk4r1KWrdLBk"
+        output = "./sequence_labeling/logistic_regression/log_reg_token_cls_model.pickle"
+        gdown.download(url, output, quiet=False)
         filename = "./log_reg_token_cls_model.pickle" # Modal Path
         loaded_model = pickle.load(open(filename, 'rb'))
         self.logisticRegression = loaded_model["model"]
